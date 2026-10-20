@@ -5,7 +5,11 @@ from iks_verify.index.hybrid import HybridRetriever
 from iks_verify.ingest.normalize import normalize_devanagari
 from iks_verify.llm.base import LLM, FallbackLLM
 from iks_verify.llm.ratelimit import RateLimiter, with_backoff
-from iks_verify.pipeline.attribution import check_attributions, parse_verse_id
+from iks_verify.pipeline.attribution import (
+    check_attributions,
+    normalize_citation_id,
+    parse_verse_id,
+)
 from iks_verify.pipeline.run import VerificationPipeline
 from tests.helpers import run_immediately
 
@@ -25,6 +29,9 @@ def test_normalize_devanagari():
 def test_parse_verse_id():
     assert parse_verse_id("Gita 2.47") == ("Gita", "2", "47")
     assert parse_verse_id("wrong") is None
+    assert normalize_citation_id("गिता 2.47") == "Gita 2.47"
+    assert normalize_citation_id("गीता 2.47") == "Gita 2.47"
+    assert normalize_citation_id("योग सूत्र 1.2") == "YogaSutras 1.2"
 
 
 def test_attribution_checks_fixture():
@@ -32,6 +39,8 @@ def test_attribution_checks_fixture():
     flags = check_attributions("This is [Gita 99.99]", retriever.verses)
     assert flags[0].kind == "FABRICATED_CITATION"
     assert not check_attributions("[Gita 2.47]", retriever.verses)
+    assert not check_attributions("[गिता 2.47]", retriever.verses)
+    assert check_attributions("[Gita 19.5]", retriever.verses)[0].closest_verse_id == "Gita 2.47"
 
 
 def test_retrieval():

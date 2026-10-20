@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 
 
@@ -78,3 +79,54 @@ def export_manual_sample(records: list[dict], output: Path, size: int = 30) -> N
                 "human_verdict": "",
                 "human_notes": "",
             })
+
+
+def write_stratified_summary(metrics: dict, output: Path) -> None:
+    """Persist both machine-readable metrics and the requested compact table."""
+    (output / "stratified_metrics.json").write_text(
+        json.dumps(metrics, indent=2), encoding="utf-8"
+    )
+    metadata = {}
+    metadata_path = output / "pilot_metadata.json"
+    if metadata_path.exists():
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    lines = [
+        "# Stratified evaluation pilot",
+        "",
+        f"Real API calls: **{metadata.get('api_calls', '—')}**",
+        "",
+        "| System | Claim precision | Fabricated-citation catch rate | Out-of-corpus abstention rate |",
+        "|---|---:|---:|---:|",
+    ]
+    for system, data in metrics["systems"].items():
+        lines.append(
+            "| {system} | {claim} | {fabricated} | {abstention} |".format(
+                system=system,
+                claim=_format_rate(data["claim_precision"]),
+                fabricated=_format_rate(data["fabricated_citation_catch_rate"]),
+                abstention=_format_rate(data["out_of_corpus_abstention_rate"]),
+            )
+        )
+    lines.append("\n## Per system and category")
+    for system, data in metrics["systems"].items():
+        lines.extend([
+            f"\n### {system}",
+            "",
+            "| Category | Records | Claim precision | Fabricated-citation catch rate | Out-of-corpus abstention rate |",
+            "|---|---:|---:|---:|---:|",
+        ])
+        for category, category_data in data["categories"].items():
+            lines.append(
+                "| {category} | {records} | {claim} | {fabricated} | {abstention} |".format(
+                    category=category,
+                    records=category_data["records"],
+                    claim=_format_rate(category_data["claim_precision"]),
+                    fabricated=_format_rate(category_data["fabricated_citation_catch_rate"]),
+                    abstention=_format_rate(category_data["out_of_corpus_abstention_rate"]),
+                )
+            )
+    (output / "stratified_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _format_rate(value: float | None) -> str:
+    return "—" if value is None else f"{value:.2%}"

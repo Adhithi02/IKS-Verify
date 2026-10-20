@@ -58,10 +58,9 @@ class HybridRetriever:
             " ".join(filter(None, [v.sanskrit_devanagari, v.transliteration_iast, v.english_translation]))
             for v in verses
         ]
-        # English is the common query language for this prototype. Keeping it
-        # separate from Sanskrit/transliteration avoids diluting semantic
-        # retrieval while BM25 still searches all available text.
-        self.embedding_documents = [v.english_translation or v.sanskrit_devanagari for v in verses]
+        # Index every available representation so Sanskrit and IAST queries can
+        # retrieve Yoga Sutras even when the English alignment is unavailable.
+        self.embedding_documents = [document for document in self.documents]
         tokenized = [_tokens(document) for document in self.documents]
         try:
             from rank_bm25 import BM25Okapi
@@ -136,7 +135,7 @@ class HybridRetriever:
             "verses": len(self.verses),
             "has_faiss": self.faiss_index is not None,
             "embedding_model": self.embedding_model,
-            "embedding_field": "english_translation",
+            "embedding_field": "sanskrit_devanagari transliteration_iast english_translation",
         }
         (index_dir / "index_meta.json").write_text(json.dumps(meta), encoding="utf-8")
 

@@ -10,7 +10,11 @@ class LLM(ABC):
         self.settings = settings
         self.cache = DiskCache(settings.llm_cache_dir)
         self.limiter = RateLimiter(settings.llm_requests_per_minute, settings.llm_tokens_per_minute)
-        self.calls = 0
+        self.call_count_path = settings.llm_cache_dir / "api_call_count.txt"
+        try:
+            self.calls = int(self.call_count_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, ValueError):
+            self.calls = 0
         self.last_remaining_requests: str | None = None
         self.last_remaining_tokens: str | None = None
         self.last_retry_after: str | None = None
@@ -45,6 +49,7 @@ class LLM(ABC):
             return cached
         await self.limiter.acquire(max(1, len(prompt) // 4))
         self.calls += 1
+        self.call_count_path.write_text(str(self.calls), encoding="utf-8")
         result = await with_backoff(lambda: self._complete(prompt, model, temperature))
         self.cache.set(cache_key, result)
         return result
