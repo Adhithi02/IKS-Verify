@@ -207,4 +207,4 @@ o01, o02, o03, o04, o05, o06, o07, o08, o09, o10, o11, o12, o13, o14, o15
 6. Complete `results/manual_judge_sample.csv` with independent human labels, then run `scripts/judge_agreement.py` and report agreement.
 7. Manually test the built UI in a browser, especially keyboard focus, the SSE progress flow, mobile evidence drawer, rate-limit countdown, and JSON/PNG downloads.
 8. Review outstanding development dependency advisories before upgrading Vite/Vitest.
-9. Before further work, review `git status`; the initial project commit already exists (`8dfcf0b`) and this handoff correction is commit `449dc47`.
+9. Before further work, review `git status` and `git log --oneline`; the initial project commit already exists (`8dfcf0b`).
