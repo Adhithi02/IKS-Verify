@@ -20,7 +20,7 @@ Insert tables from `results/summary.md` only after (a) the corpus is validated, 
 # Limitations
 
 - Free-tier LLM judges are weak on Sanskrit, recension differences, and school-specific readings.
-- Corpus size is small (Gita, Yoga Sutras, and whichever Upanishads actually ingested); absence of evidence is not a claim about all Indian traditions.
+- Corpus size is small (Bhagavad Gita and Yoga Sutras only); absence of evidence is not a claim about all Indian traditions.
 - The 60-item set is hand-built; many gold verse ids remain `NEEDS_HUMAN_VERIFICATION`.
 - Gita 700-verse numbering for chapter 13 follows a standard recension mapping of a 701-line source (documented in `data/SOURCES.md`).
 - Model catalogues and free-tier quotas change; `--resume` is required for multi-day runs.

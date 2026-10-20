@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     llm_tokens_per_minute: int = 10_000
     llm_daily_request_budget: int = 1_000
     llm_cache_dir: Path = Path(".cache/llm")
-    embedding_model: str = "BAAI/bge-m3"
+    embedding_model: str = "intfloat/multilingual-e5-small"
     embedding_fallback_model: str = "intfloat/multilingual-e5-small"
     quote_match_threshold: int = 82
     corpus_path: Path = Path("data/processed/corpus.jsonl")

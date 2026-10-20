@@ -42,7 +42,7 @@ There is a Makefile for Unix; on Windows use `scripts/dev.ps1`.
 
 That command lists `/models` (or Gemini equivalent), prints the configured names, warns if they are missing from the list, and makes one tiny test call. **Pick a currently listed Groq model** (often a gpt-oss or Llama family name). Do not copy stale names from old docs.
 
-## Corpus and index
+## Corpus and index (Gita + Yoga Sutras)
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\download_sources.py

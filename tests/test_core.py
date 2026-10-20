@@ -13,7 +13,7 @@ FIXTURE = Path("tests/fixtures/corpus.jsonl")
 
 
 def _settings(**kwargs) -> Settings:
-    values = {"llm_provider": "mock", "corpus_path": FIXTURE}
+    values = {"llm_provider": "mock", "corpus_path": FIXTURE, "embedding_model": "disabled"}
     values.update(kwargs)
     return Settings(**values)
 

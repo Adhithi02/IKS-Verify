@@ -14,7 +14,11 @@ class VerificationPipeline:
     def __init__(self, settings: Settings | None = None, llm: LLM | None = None) -> None:
         self.settings = settings or get_settings()
         self.llm = llm or get_llm(self.settings)
-        self.retriever = HybridRetriever.from_jsonl(self.settings.corpus_path, index_dir=self.settings.index_dir)
+        self.retriever = HybridRetriever.from_jsonl(
+            self.settings.corpus_path,
+            embedding_model=self.settings.embedding_model,
+            index_dir=self.settings.index_dir,
+        )
 
     async def events(self, question: str, system: str = "verify") -> AsyncGenerator[dict, None]:
         yield {"stage": "retrieving"}
@@ -32,7 +36,12 @@ class VerificationPipeline:
             yield {"stage": "verifying"}
             claims = await verify_claims(claims, passages, self.llm)
             yield {"stage": "checking_attributions"}
-            flags = check_attributions(answer, self.retriever.verses, self.settings.quote_match_threshold)
+            flags = check_attributions(
+                answer,
+                self.retriever.verses,
+                self.settings.quote_match_threshold,
+                question=question,
+            )
         supported = sum(claim.verdict and claim.verdict.value == "SUPPORTED" for claim in claims)
         contradicted = sum(claim.verdict and claim.verdict.value == "CONTRADICTED" for claim in claims)
         unverifiable = sum(claim.verdict and claim.verdict.value == "UNVERIFIABLE" for claim in claims)

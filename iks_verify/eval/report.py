@@ -2,22 +2,23 @@ import csv
 from pathlib import Path
 
 
-def write_summary(metrics: dict[str, float], output: Path) -> None:
+def write_summary(metrics: dict[str, float], output: Path, mock: bool = False) -> None:
     output.mkdir(parents=True, exist_ok=True)
     with (output / "summary.csv").open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=metrics.keys())
         writer.writeheader()
         writer.writerow(metrics)
+    label = "MOCK EVALUATION — not research findings" if mock else "Evaluation pilot"
     markdown = (
-        "# MOCK EVALUATION — not research findings\n\n"
+        f"# {label}\n\n"
         "| Metric | Score |\n|---|---:|\n"
         + "\n".join(f"| {key} | {value:.2%} |" for key, value in metrics.items())
     )
     (output / "summary.md").write_text(markdown, encoding="utf-8")
-    _write_chart(metrics, output / "metrics.svg")
+    _write_chart(metrics, output / "metrics.svg", label)
 
 
-def _write_chart(metrics: dict[str, float], output: Path) -> None:
+def _write_chart(metrics: dict[str, float], output: Path, label: str) -> None:
     rows = []
     for index, (name, value) in enumerate(metrics.items()):
         y = 30 + index * 32
@@ -32,7 +33,7 @@ def _write_chart(metrics: dict[str, float], output: Path) -> None:
     output.write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="680" '
         f'height="{height}" viewBox="0 0 680 {height}">'
-        '<text x="10" y="18" font-size="12">MOCK EVALUATION — not research findings</text>'
+        f'<text x="10" y="18" font-size="12">{label}</text>'
         + "".join(rows)
         + "</svg>",
         encoding="utf-8",

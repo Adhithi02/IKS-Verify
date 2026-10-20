@@ -65,7 +65,7 @@ async def run(args: argparse.Namespace) -> None:
                 file.flush()
             print(f"completed {question['id']} | {pipeline.llm.budget_line()}")
     all_records = [EvalRecord.model_validate(item) for item in raw_records]
-    write_summary(calculate(all_records), output)
+    write_summary(calculate(all_records), output, mock=args.mock or settings.is_mock)
     export_manual_sample(raw_records, output / "manual_judge_sample.csv")
     print("MOCK EVALUATION — not research findings" if args.mock or settings.is_mock else "evaluation complete")
 

@@ -34,13 +34,3 @@ means.
 - Retrieved: 2026-10-20
 - Notes: The Yoga Sutras of Patanjali: The Book of the Spiritual Man, Charles Johnston. Gutenberg license applies to the ebook packaging.
 
-## Manual download required
-
-Upanishads could not be fully downloaded automatically.
-Last error: Missing Sanskrit files for: ['Isha', 'Kena', 'Katha', 'Mandukya']
-Manual steps:
-1. Obtain public-domain Devanagari for Isha (18), Kena (4 khandas: 8/5/12/9), Katha (6 vallis: 29/25/17/15/15/18), Mandukya (12) from a PD/CC source (e.g. sa.wikisource.org pages, or a Public Domain Mark dump).
-2. Obtain PD English (Max Müller SBE 1/15, Hume 1921, or Paramananda 1919).
-3. Save JSONL lines to data/processed/upanishads.jsonl with fields: text_id, chapter, verse, sanskrit_devanagari, transliteration_iast, english_translation, source, license. Do not generate Sanskrit.
-4. Re-run: python scripts/download_sources.py
-

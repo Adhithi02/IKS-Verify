@@ -25,15 +25,7 @@ GITA_700 = {
     "17": 28, "18": 78,
 }
 YOGA_195 = {"1": 51, "2": 55, "3": 55, "4": 34}
-UPANISHAD_EXPECTED = {
-    "Isha": {"1": 18},
-    "Kena": {"1": 8, "2": 5, "3": 12, "4": 9},
-    "Katha": {"1": 29, "2": 25, "3": 17, "4": 15, "5": 15, "6": 18},
-    "Mandukya": {"1": 12},
-}
-
 PROVENANCE: list[dict[str, str]] = []
-MANUAL: list[str] = []
 
 
 def fetch(url: str, dest: Path | None = None) -> str:
@@ -193,59 +185,6 @@ def _johnston_by_pada(text: str) -> dict[tuple[int, int], str]:
     return mapped
 
 
-def parse_upanishads() -> list[Verse]:
-    verses: list[Verse] = []
-    try:
-        verses.extend(_parse_paramananda_and_sanskrit())
-    except Exception as error:
-        MANUAL.append(
-            "Upanishads could not be fully downloaded automatically.\n"
-            f"Last error: {error}\n"
-            "Manual steps:\n"
-            "1. Obtain public-domain Devanagari for Isha (18), Kena (4 khandas: 8/5/12/9), "
-            "Katha (6 vallis: 29/25/17/15/15/18), Mandukya (12) from a PD/CC source "
-            "(e.g. sa.wikisource.org pages, or a Public Domain Mark dump).\n"
-            "2. Obtain PD English (Max Müller SBE 1/15, Hume 1921, or Paramananda 1919).\n"
-            "3. Save JSONL lines to data/processed/upanishads.jsonl with fields: "
-            "text_id, chapter, verse, sanskrit_devanagari, transliteration_iast, "
-            "english_translation, source, license. Do not generate Sanskrit.\n"
-            "4. Re-run: python scripts/download_sources.py\n"
-        )
-    return verses
-
-
-def _parse_paramananda_and_sanskrit() -> list[Verse]:
-    """Sanskrit from CLTK-style mirrors if present; English from Gutenberg 3283 (Paramananda, 1919)."""
-    candidates = {
-        "Isha": [
-            "https://raw.githubusercontent.com/cltk/sanskrit_text_gitasupersite/master/upanishad/isha.txt",
-            "https://cdn.jsdelivr.net/gh/sanskrit-documents/doc_upanishhat@master/ishavasya.dev.txt",
-        ],
-        "Kena": [
-            "https://raw.githubusercontent.com/cltk/sanskrit_text_gitasupersite/master/upanishad/kena.txt",
-        ],
-        "Katha": [
-            "https://raw.githubusercontent.com/cltk/sanskrit_text_gitasupersite/master/upanishad/katha.txt",
-        ],
-        "Mandukya": [
-            "https://raw.githubusercontent.com/cltk/sanskrit_text_gitasupersite/master/upanishad/mandukya.txt",
-        ],
-    }
-    found: dict[str, str] = {}
-    for text_id, urls in candidates.items():
-        for url in urls:
-            try:
-                found[text_id] = fetch(url, RAW / "upanishads" / f"{text_id}.txt")
-                record(f"{text_id} Sanskrit", url, "See file header / source page", "Downloaded for parse.")
-                break
-            except Exception:
-                continue
-    if len(found) < 4:
-        missing = [name for name in candidates if name not in found]
-        raise FileNotFoundError(f"Missing Sanskrit files for: {missing}")
-    raise FileNotFoundError("Sanskrit Upanishad mirrors were not in Devanagari verse JSONL form")
-
-
 def validate(verses: list[Verse], text_id: str, expected: dict[str, int]) -> tuple[bool, str]:
     subset = [v for v in verses if v.text_id == text_id]
     counts = Counter(v.chapter for v in subset)
@@ -272,8 +211,6 @@ def write_sources_md() -> None:
             f"- Notes: {item['note']}",
             "",
         ]
-    if MANUAL:
-        lines += ["## Manual download required", ""] + [f"{block}\n" for block in MANUAL]
     SOURCES_MD.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -311,18 +248,6 @@ def main() -> int:
         rows.append(f"YogaSutras   DOWNLOAD/PARSE FAIL: {error}")
         failed = True
 
-    upanishads = parse_upanishads()
-    verses.extend(upanishads)
-    for text_id, expected in UPANISHAD_EXPECTED.items():
-        subset = [v for v in verses if v.text_id == text_id]
-        if not subset:
-            rows.append(f"{text_id:12} MISSING (see manual steps in data/SOURCES.md)")
-            failed = True
-        else:
-            ok, row = validate(verses, text_id, expected)
-            rows.append(row)
-            failed = failed or not ok
-
     fixture_only = [v for v in verses if "FIXTURE_ONLY" in v.license or "FIXTURE_ONLY" in v.source]
     if fixture_only:
         raise SystemExit("Refusing to write FIXTURE_ONLY records into the production corpus.")
@@ -334,8 +259,6 @@ def main() -> int:
         write_sources_md()
         print_table(rows)
         print("VALIDATION FAILED — existing corpus.jsonl was left unchanged.", file=sys.stderr)
-        if MANUAL:
-            print("\n".join(MANUAL))
         return 1
 
     PROCESSED.mkdir(parents=True, exist_ok=True)
@@ -346,8 +269,6 @@ def main() -> int:
     write_sources_md()
     print_table(rows)
     print(f"Wrote {len(verses)} verses to {PROCESSED / 'corpus.jsonl'}")
-    if MANUAL:
-        print("\n".join(MANUAL))
     return 0
 
 
