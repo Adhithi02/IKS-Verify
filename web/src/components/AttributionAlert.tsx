@@ -1,0 +1,3 @@
+import { AlertTriangle } from "lucide-react";
+import type { AttributionFlag } from "../types";
+export function AttributionAlert({flags}:{flags:AttributionFlag[]}) { if(!flags.length)return null; return <section className="alerts">{flags.map((flag,index)=><article key={index}><AlertTriangle size={19}/><div><b>{flag.kind.replace("_"," ")}</b><p>{flag.message} Cited: {flag.cited}{flag.closest_verse_id&&`; closest real verse: ${flag.closest_verse_id}`}</p>{flag.quoted_text&&<div className="quote-diff"><span>{flag.quoted_text}</span><span>{flag.actual_text}</span></div>}</div></article>)}</section>; }

@@ -1,0 +1,3 @@
+import { Send } from "lucide-react";
+interface Props { value:string; onChange:(value:string)=>void; onSubmit:()=>void; disabled:boolean }
+export function AskBox({value,onChange,onSubmit,disabled}:Props) { return <div className="ask-box"><textarea aria-label="Ask a question" value={value} onChange={e=>onChange(e.target.value)} onKeyDown={e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter") onSubmit();}} placeholder="Ask the texts a careful question…"/><button aria-label="Submit question" onClick={onSubmit} disabled={disabled || value.trim().length < 2}><Send size={18}/><span>Verify</span></button></div>; }
