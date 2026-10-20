@@ -195,7 +195,7 @@ o01, o02, o03, o04, o05, o06, o07, o08, o09, o10, o11, o12, o13, o14, o15
 - Only Groq has a real-API verification. Other provider integrations are **NOT VERIFIED** with real keys.
 - Browser-level manual UX/accessibility testing is **NOT VERIFIED**, although lint, unit tests, and the production build pass.
 - `npm audit fix` reduced the dependency tree but development-only advisories remain; production-only audit had no reported vulnerabilities. Do not use a breaking `npm audit fix --force` without reviewing Vite/Vitest upgrades.
-- No Git commit was created: the repository was initialized, but the first commit was not completed during the earlier approval flow. All project files are present locally.
+- Initial local Git commit created: `8dfcf0b` (`Build verified IKS-Verify research prototype`).
 
 # 9. MY MANUAL TODO LIST
 
