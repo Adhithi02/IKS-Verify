@@ -1,72 +1,176 @@
 # IKS-Verify
 
-IKS-Verify is a research prototype for retrieval-grounded question answering, claim verification, and deterministic verse-attribution checks over Indian Knowledge System texts.
+IKS-Verify is a research prototype for retrieval-grounded question answering over the Bhagavad Gita and Yoga Sutras. It combines local verse retrieval, LLM answer generation, claim verification, and deterministic citation checks.
 
-## Windows quickstart (PowerShell)
+> **Research prototype:** results are diagnostic, not scholarly conclusions. Factual labels marked `NEEDS_HUMAN_VERIFICATION` require review by a domain expert.
 
-1. Python 3.11+ and Node.js LTS. From the repo root:
+## What it demonstrates
+
+- Hybrid BM25 + FAISS retrieval over 895 corpus records.
+- Retrieval fields include Sanskrit Devanagari, IAST when available, and English translations.
+- Three answer modes: `plain`, `rag`, and `verify`.
+- Claim-level `SUPPORTED`, `CONTRADICTED`, and `UNVERIFIABLE` verdicts.
+- Deterministic fabricated-citation and Sanskrit-quotation checks.
+- Abstention for out-of-corpus questions.
+- FastAPI backend and a Vite/React web interface.
+
+## Quick demo on Windows
+
+### Prerequisites
+
+- Python 3.11 or newer
+- Node.js LTS
+- A configured LLM provider for live answers, or mock mode for an offline demo
+
+From PowerShell at the repository root:
 
 ```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
 .\scripts\dev.ps1 setup
 ```
 
-2. `scripts/dev.ps1` targets:
-
-| Target | What it does |
-| --- | --- |
-| `.\scripts\dev.ps1 setup` | pip install + `npm install` in `web/` |
-| `.\scripts\dev.ps1 serve` | production API (`python -m iks_verify.serve`, serves `web/dist` if built) |
-| `.\scripts\dev.ps1 dev` | prints the two-window API + Vite commands |
-| `.\scripts\dev.ps1 test` | pytest (fixture corpus) + `npm test` |
-| `.\scripts\dev.ps1 lint` | ruff + `npm run lint` |
-
-3. Dev UI: one terminal `.\scripts\dev.ps1 serve`, another `Set-Location .\web; npm run dev`. Production UI: `Set-Location .\web; npm run build` then `.\scripts\dev.ps1 serve`.
-
-There is a Makefile for Unix; on Windows use `scripts/dev.ps1`.
-
-## Free Groq / Gemini key and model selection
-
-1. Groq: create a key at [console.groq.com](https://console.groq.com). Gemini: [aistudio.google.com](https://aistudio.google.com).
-2. Put the key in `.env` (`GROQ_API_KEY` or `GEMINI_API_KEY`). Never commit `.env`.
-3. Set `LLM_PROVIDER=groq` (or `gemini`). `.env.example` uses Groq's current
-   economical default, `openai/gpt-oss-20b`; change it only after checking the
-   models available to your account.
-4. Run:
+For a live provider, copy `.env.example` to `.env` and add a provider key. `.env` is ignored and must never be committed:
 
 ```powershell
-.\.venv\Scripts\python.exe -m iks_verify.llm.check
+Copy-Item .env.example .env
 ```
 
-That command lists `/models` (or Gemini equivalent), prints the configured names, warns if they are missing from the list, and makes one tiny test call. **Pick a currently listed Groq model** (often a gpt-oss or Llama family name). Do not copy stale names from old docs.
+Start the API in one terminal:
 
-## Corpus and index (Gita + Yoga Sutras)
+```powershell
+.\scripts\dev.ps1 serve
+```
+
+Start the web UI in a second terminal:
+
+```powershell
+Set-Location .\web
+npm run dev
+```
+
+Open the Vite URL, normally <http://localhost:5173>. Check the API with <http://127.0.0.1:8000/health>.
+
+Recommended demo questions:
+
+```text
+What does the Gita say about action and its fruits?
+According to the Yoga Sutras, what is yoga?
+What does Gita 99.99 say about quantum physics?
+What is the Python GIL?
+```
+
+The third question demonstrates fabricated-citation detection. The fourth demonstrates out-of-corpus abstention.
+
+### Offline demo
+
+The mock provider avoids network calls:
+
+```powershell
+$env:LLM_PROVIDER = "mock"
+.\.venv\Scripts\python.exe -m iks_verify.serve
+```
+
+## API
+
+The backend runs at `http://127.0.0.1:8000`.
+
+```powershell
+$body = @{
+    question = "What does Gita 99.99 say about quantum physics?"
+    system = "verify"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri http://127.0.0.1:8000/ask `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+Endpoints:
+
+- `GET /health` — service status and persisted provider call count.
+- `GET /examples` — example demo questions.
+- `POST /ask` — run one system (`plain`, `rag`, `verify`, or `selfcheck`).
+- `POST /compare` — run `plain`, `rag`, and `verify` for one question.
+- `GET /verse/{text_id}/{chapter}/{verse}` — retrieve a corpus verse.
+
+## Corpus and index
+
+The production corpus contains:
+
+- Bhagavad Gita: 700 verses
+- Yoga Sutras: 195 sutras
+- Total: 895 records
+
+Rebuild the source corpus and local index when needed:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\download_sources.py
-.\.venv\Scripts\python.exe -m iks_verify.ingest.build_corpus data\processed\corpus.jsonl
 .\.venv\Scripts\python.exe -m pip install -r requirements-local-embeddings.txt
 .\.venv\Scripts\python.exe scripts\build_index.py
 ```
 
-Licenses and retrieval dates are recorded in `data/SOURCES.md`. Sanskrit is never generated. Fixtures live only in `tests/fixtures/`.
+Source provenance and licenses are recorded in [`data/SOURCES.md`](data/SOURCES.md). Sanskrit is retrieved from the corpus; it is not generated by the application.
 
-## Evaluation (including across days)
+## Evaluation
 
-Mock (offline):
+Run the offline test suite:
 
 ```powershell
-$env:LLM_PROVIDER='mock'
+.\scripts\dev.ps1 test
+.\scripts\dev.ps1 lint
+```
+
+Run a mock evaluation:
+
+```powershell
+$env:LLM_PROVIDER = "mock"
 .\.venv\Scripts\python.exe -m iks_verify.eval.run_eval --mock --limit 60
 ```
 
-Real key, small batch, subset of systems, then resume later if you hit quota:
+Run a real evaluation in a fresh cache:
 
 ```powershell
-.\.venv\Scripts\python.exe -m iks_verify.eval.run_eval --limit 5 --systems verify
-.\.venv\Scripts\python.exe -m iks_verify.eval.run_eval --resume --limit 60 --systems plain,rag,verify,selfcheck
+.\.venv\Scripts\python.exe -m iks_verify.eval.run_eval `
+    --stratified-per-category 4 `
+    --systems plain,rag,verify `
+    --output results\final_pilot `
+    --fresh-cache
 ```
 
-`--resume` skips id+system pairs already in `results/records.jsonl`. Outputs are labelled **MOCK EVALUATION** when run with `--mock`. After you fill `human_verdict` in `results/manual_judge_sample.csv`, run `.\.venv\Scripts\python.exe scripts\judge_agreement.py`.
+If the provider rate-limits the run, resume with:
+
+```powershell
+.\.venv\Scripts\python.exe -m iks_verify.eval.run_eval `
+    --stratified-per-category 4 `
+    --systems plain,rag,verify `
+    --output results\final_pilot `
+    --resume
+```
+
+The evaluator writes per-system and per-category metrics to `results\final_pilot`. API calls are persisted in `pilot_metadata.json` and in the cache's `api_call_count.txt`.
+
+The completed pilot is documented in [`docs/HANDOFF_REPORT.md`](docs/HANDOFF_REPORT.md), with the generated summary at `results\final_pilot\stratified_summary.md` when present locally.
+
+## Project layout
+
+```text
+iks_verify/       FastAPI service, retrieval, LLM adapters, verification pipeline
+web/              Vite/React demo UI
+data/             Processed corpus and source provenance
+scripts/          Setup, corpus, index, and evaluation helpers
+tests/            Python and frontend tests
+docs/             Architecture and handoff documentation
+```
+
+## Configuration and safety
+
+- Never commit `.env`, API keys, or generated local caches.
+- `.env.example` contains configuration names only.
+- Provider calls can incur quota usage or cost. Use mock mode for repeated UI demonstrations.
+- The corpus and translations have their own source and license terms; see `data/SOURCES.md`.
+- This project does not replace expert interpretation or scholarly editions.
+
+## License
+
+Application source licensing is defined by the repository owner. Corpus source and translation licenses are documented separately in [`data/SOURCES.md`](data/SOURCES.md); do not assume one license applies to all bundled data.
